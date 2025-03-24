@@ -1,0 +1,11 @@
+Set Name: Abc, Key: ('dfg', 'klm', '86_PN’, bytearray(b'\ygb\xfei)),JSON Data: {
+"IastUpdateTime": “11:35:47",
+"docStatus”: "UNDER REVIEW",
+“documentNames”: [
+        "123_4300419.jpg"
+],
+"docType": "PAN",
+"dateInEpoch": 18208283423,
+"retailerId": "560529249",
+"IstUpdateDate": "15-01-2024”
+}
