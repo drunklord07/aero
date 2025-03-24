@@ -1,0 +1,1 @@
+=IF(AND(LEN(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(D1, "'", ""), """", ""), " ", ""))=12, ISNUMBER(VALUE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(D1, "'", ""), """", ""), " ", "")))), "Potential", "")
