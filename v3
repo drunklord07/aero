@@ -1,0 +1,93 @@
+import pandas as pd
+import re
+
+def parse_file_to_excel(input_file, output_file):
+    rows = []
+    current_section = None
+    create_time = None
+    timestamp_counter = 0
+    capture_after = False
+    after_content = ""
+
+    # Aadhaar and phone number regex patterns
+    aadhaar_pattern = re.compile(r'\b\d{12}\b')
+    phone_pattern = re.compile(r'\b\d{10}\b')
+
+    with open(input_file, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+
+        # Detect Section Headers: If the next line is "CreateTime:", this is a section header
+        if i + 1 < len(lines) and lines[i + 1].strip().startswith("CreateTime:"):
+            current_section = line  # Store the section name
+            timestamp_counter = 0  # Reset timestamp counter
+
+        # Detect CreateTime (e.g., "CreateTime: 1733583080147")
+        elif line.startswith("CreateTime:"):
+            create_time = int(line.split(":")[1].strip())  # Extract timestamp
+
+        # Detect start of "after": { block (spans multiple lines)
+        elif '"after": {' in line:
+            capture_after = True
+            after_content = line  # Start capturing
+
+        # Capture everything inside "after": { ... }
+        elif capture_after:
+            after_content += " " + line
+            if "}" in line:  # Stop capturing at closing bracket
+                capture_after = False
+                timestamp_counter += 1
+
+                # Check for Aadhaar and Phone inside long "after" content
+                aadhaar_match = aadhaar_pattern.search(after_content)
+                phone_match = phone_pattern.search(after_content)
+
+                aadhaar_status = "Potential Aadhaar" if aadhaar_match else ""
+                phone_status = "Potential Phone Number" if phone_match else ""
+
+                rows.append([
+                    current_section, 
+                    create_time + timestamp_counter, 
+                    "after", 
+                    after_content, 
+                    aadhaar_status, 
+                    phone_status
+                ])
+                after_content = ""  # Reset
+
+        # Extract regular key-value pairs
+        else:
+            matches = re.findall(r'"?([\w@]+)"?\s*:\s*"?([^",{}\[\]]+)"?', line)
+            for key, value in matches:
+                timestamp_counter += 1
+
+                # Check for Aadhaar and phone number inside long text
+                aadhaar_match = aadhaar_pattern.search(value)
+                phone_match = phone_pattern.search(value)
+
+                aadhaar_status = "Potential Aadhaar" if aadhaar_match else ""
+                phone_status = "Potential Phone Number" if phone_match else ""
+
+                rows.append([
+                    current_section, 
+                    create_time + timestamp_counter, 
+                    key, 
+                    value, 
+                    aadhaar_status, 
+                    phone_status
+                ])
+
+    # Convert to Pandas DataFrame
+    df = pd.DataFrame(rows, columns=["Transaction Type", "CreateTime", "Key", "Value", "Potential Aadhaar", "Potential Phone Number"])
+
+    # Save to Excel
+    df.to_excel(output_file, index=False)
+
+    print(f"Excel file successfully written to {output_file}")
+
+# Example usage
+input_file_path = "transactions.txt"  # Replace with your actual file path
+output_file_path = "parsed_transactions.xlsx"  # Output Excel file
+parse_file_to_excel(input_file_path, output_file_path)
