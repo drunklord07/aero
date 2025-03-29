@@ -11,6 +11,8 @@ def flatten_json(nested_json, prefix=""):
         full_key = f"{prefix}.{key}" if prefix else key
         if isinstance(value, dict):
             flat_dict.update(flatten_json(value, full_key))
+        elif isinstance(value, list):
+            flat_dict[full_key] = ', '.join(map(str, value))  # Convert list to string
         else:
             flat_dict[full_key] = value
     return flat_dict
@@ -22,20 +24,26 @@ def parse_transaction_file(input_file, output_file):
     json_block = []
     inside_json = False
 
+    print(f"🔍 Reading file: {input_file}")
+
     with open(input_file, "r", encoding="utf-8") as file:
         lines = file.readlines()
 
-    for line in lines:
+    print(f"📄 Total lines in file: {len(lines)}")
+
+    for line_num, line in enumerate(lines, start=1):
         line = line.strip()
 
         # Identify transaction type
         if re.match(r"^\w+[-_]\w+[-_]\w+[-_]\w+$", line):
             transaction_type = line  # Store transaction type
+            print(f"\n📌 Line {line_num}: Found transaction type → {transaction_type}")
             continue
 
         # Identify CreateTime
         if line.startswith("CreateTime:"):
             create_time = line.split(":", 1)[1].strip()
+            print(f"⏳ Line {line_num}: Found CreateTime → {create_time}")
             continue
 
         # Detect start of JSON
@@ -53,19 +61,26 @@ def parse_transaction_file(input_file, output_file):
 
                 # Parse JSON
                 try:
-                    json_data = json.loads(json_string)
+                    json_data = json.loads(json_string)  # Load JSON
                     flat_data = flatten_json(json_data)  # Flatten nested JSON
                     for key, value in flat_data.items():
+                        print(f"✅ Parsed: {transaction_type} | {create_time} | {key} | {value}")  # Debug print
                         data.append([transaction_type, create_time, key, value])
-                except json.JSONDecodeError:
-                    print(f"Skipping invalid JSON: {json_string}")
+                except json.JSONDecodeError as e:
+                    print(f"\n⚠️ Line {line_num}: Skipping invalid JSON due to error:\n{json_string[:200]}...")
+                    print(f"Error: {e}")
+
+    # Check if any data was extracted
+    if not data:
+        print("\n❌ No valid transactions found. Check the input file for errors.")
+        return
 
     # Create DataFrame
     df = pd.DataFrame(data, columns=["Transaction Type", "CreateTime", "Key", "Value"])
 
     # Save to Excel
     df.to_excel(output_file, index=False)
-    print(f"Data successfully saved to {output_file}")
+    print(f"\n✅ Data successfully saved to {output_file} with {len(data)} records.")
 
 # Example usage
 parse_transaction_file("code.txt", "output.xlsx")
