@@ -1,52 +1,46 @@
 import pandas as pd
+import re
 
 # Input file
 input_file = 'code.txt'
-# Output file
-output_file = 'output_123.xlsx'
+output_file = 'output_fixed.xlsx'
 
-# Initialize an empty list to store the parsed data
 parsed_data = []
 
-# Open the input file and read the contents with UTF-8 encoding
 with open(input_file, 'r', encoding='utf-8') as f:
     lines = f.readlines()
 
-# Initialize variables
+print("📄 File Contents Read:\n", "\n".join(lines))
+print("-------------------------------------------------")
+
 transaction_type = ''
 create_time = ''
 
 i = 0
 while i < len(lines):
     line = lines[i].strip()
+    print(f"🔍 Checking line {i}: {line}")
 
-    # Check for Transaction Type
     if line.startswith('a123-apb-transactions-v2') or line.startswith('360ch_nobook_txn_retry'):
+        print(f"✅ Transaction type detected: {line}")
         transaction_type = line
 
-    # Capture CreateTime
     elif line.startswith('CreateTime:'):
-        create_time = line.split(':', 1)[1].strip()
+        print(f"🕒 Found CreateTime line: {line}")
 
-    # Check for JSON-like structures
-    elif line.startswith('{'):
-        # Collect the entire JSON-like section
-        json_data = line
-        i += 1  # Move to next line
+        # Extract CreateTime (numeric value)
+        create_time_match = re.search(r"CreateTime:\s*(\d+)", line)
+        if create_time_match:
+            create_time = create_time_match.group(1)
+            print(f"✅ Extracted CreateTime: {create_time}")
 
-        # Continue collecting until we reach the closing brace
-        while i < len(lines):
-            json_line = lines[i].strip()
-            json_data += json_line
-            if json_line.endswith('}'):
-                break
-            i += 1  # Move to next line
+        # Extract JSON part (remove CreateTime part)
+        json_part = line.split('CreateTime:')[1].strip()
+        json_part = json_part[len(create_time):].strip()
 
-        # Clean up data for parsing
-        json_data_cleaned = json_data.replace('\n', '').replace('""', '"').strip()
+        print(f"📑 Extracted Key-Value Section: {json_part[:100]}...")
 
-        # Parsing Key-Value Pairs
-        key_value_pairs = json_data_cleaned.replace('{', '').replace('}', '').split(',')
+        key_value_pairs = json_part.replace('{', '').replace('}', '').split(',')
 
         for pair in key_value_pairs:
             pair = pair.strip()
@@ -61,8 +55,15 @@ while i < len(lines):
                     'Key': key,
                     'Value': value
                 })
+    
+    i += 1
 
-    i += 1  # Move to next line
+# Debug: Print parsed data before writing to file
+if parsed_data:
+    for parsed in parsed_data:
+        print(f"📊 Parsed Data: {parsed}")
+else:
+    print("❌ No valid transactions found. Check the input file for errors.")
 
 # Write the parsed data to the output file
 if parsed_data:
@@ -70,4 +71,4 @@ if parsed_data:
     df.to_excel(output_file, index=False)
     print(f"✅ Data successfully saved to {output_file}")
 else:
-    print("❌ No valid transactions found. Check the input file for errors.")
+    print("❌ No data to save. Exiting.")
