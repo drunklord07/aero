@@ -8,8 +8,8 @@ output_file = 'output_123.xlsx'
 # Initialize an empty list to store the parsed data
 parsed_data = []
 
-# Open the input file and read the contents
-with open(input_file, 'r') as f:
+# Open the input file and read the contents with UTF-8 encoding
+with open(input_file, 'r', encoding='utf-8') as f:
     lines = f.readlines()
 
 # Initialize variables
@@ -47,7 +47,7 @@ while i < len(lines):
 
         # Parsing Key-Value Pairs
         key_value_pairs = json_data_cleaned.replace('{', '').replace('}', '').split(',')
-        
+
         for pair in key_value_pairs:
             pair = pair.strip()
             if ':' in pair:
