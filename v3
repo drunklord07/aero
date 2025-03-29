@@ -1,60 +1,73 @@
 import pandas as pd
-import re
 
-def parse_transaction_file(input_file, output_file):
-    """
-    Parses a text file containing transaction data and saves extracted information to an Excel file.
-    """
-    data = []
-    transaction_type = None
-    create_time = None
+# Input file
+input_file = 'code.txt'
+# Output file
+output_file = 'output_123.xlsx'
 
-    print(f"🔍 Reading file: {input_file}")
+# Initialize an empty list to store the parsed data
+parsed_data = []
 
-    with open(input_file, "r", encoding="utf-8") as file:
-        lines = file.readlines()
+# Open the input file and read the contents
+with open(input_file, 'r') as f:
+    lines = f.readlines()
 
-    print(f"📄 Total lines in file: {len(lines)}")
+# Initialize variables
+transaction_type = ''
+create_time = ''
 
-    for line_num, line in enumerate(lines, start=1):
-        line = line.strip()
+i = 0
+while i < len(lines):
+    line = lines[i].strip()
 
-        # Identify Transaction Type
-        if re.match(r"^\w+[-_]\w+[-_]\w+[-_]\w+$", line):
-            transaction_type = line
-            print(f"\n📌 Line {line_num}: Found transaction type → {transaction_type}")
-            continue
+    # Check for Transaction Type
+    if line.startswith('a123-apb-transactions-v2') or line.startswith('360ch_nobook_txn_retry'):
+        transaction_type = line
 
-        # Identify CreateTime
-        if line.startswith("CreateTime:"):
-            create_time = line.split(":", 1)[1].strip()
-            print(f"⏳ Line {line_num}: Found CreateTime → {create_time}")
-            continue
+    # Capture CreateTime
+    elif line.startswith('CreateTime:'):
+        create_time = line.split(':', 1)[1].strip()
 
-        # Process Key-Value Pairs (Manual Parsing)
-        if line.startswith("{") and line.endswith("}"):
-            line = line[1:-1].strip()  # Remove { and }
-            key_value_pairs = re.findall(r'"([^"]+)"\s*:\s*"([^"]*)"', line)  # Extract key-value pairs
+    # Check for JSON-like structures
+    elif line.startswith('{'):
+        # Collect the entire JSON-like section
+        json_data = line
+        i += 1  # Move to next line
 
-            if not key_value_pairs:
-                print(f"⚠️ Line {line_num}: No key-value pairs found, check format!")
-                continue
+        # Continue collecting until we reach the closing brace
+        while i < len(lines):
+            json_line = lines[i].strip()
+            json_data += json_line
+            if json_line.endswith('}'):
+                break
+            i += 1  # Move to next line
 
-            for key, value in key_value_pairs:
-                print(f"✅ Parsed: {transaction_type} | {create_time} | {key} | {value}")  # Debugging
-                data.append([transaction_type, create_time, key, value])
+        # Clean up data for parsing
+        json_data_cleaned = json_data.replace('\n', '').replace('""', '"').strip()
 
-    # Check if any data was extracted
-    if not data:
-        print("\n❌ No valid transactions found. Check the input file for errors.")
-        return
+        # Parsing Key-Value Pairs
+        key_value_pairs = json_data_cleaned.replace('{', '').replace('}', '').split(',')
+        
+        for pair in key_value_pairs:
+            pair = pair.strip()
+            if ':' in pair:
+                key, value = [p.strip().strip('"') for p in pair.split(':', 1)]
+                if value.lower() == 'null':
+                    value = None  # Convert "null" to None for clarity
 
-    # Create DataFrame
-    df = pd.DataFrame(data, columns=["Transaction Type", "CreateTime", "Key", "Value"])
+                parsed_data.append({
+                    'Transaction Type': transaction_type,
+                    'CreateTime': create_time,
+                    'Key': key,
+                    'Value': value
+                })
 
-    # Save to Excel
+    i += 1  # Move to next line
+
+# Write the parsed data to the output file
+if parsed_data:
+    df = pd.DataFrame(parsed_data)
     df.to_excel(output_file, index=False)
-    print(f"\n✅ Data successfully saved to {output_file} with {len(data)} records.")
-
-# Example usage
-parse_transaction_file("code.txt", "output.xlsx")
+    print(f"✅ Data successfully saved to {output_file}")
+else:
+    print("❌ No valid transactions found. Check the input file for errors.")
