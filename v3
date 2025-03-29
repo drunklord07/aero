@@ -1,28 +1,13 @@
-import json
 import pandas as pd
 import re
 
-def flatten_json(nested_json, prefix=""):
-    """
-    Recursively flattens a nested JSON dictionary.
-    """
-    flat_dict = {}
-    for key, value in nested_json.items():
-        full_key = f"{prefix}.{key}" if prefix else key
-        if isinstance(value, dict):
-            flat_dict.update(flatten_json(value, full_key))
-        elif isinstance(value, list):
-            flat_dict[full_key] = ', '.join(map(str, value))  # Convert list to string
-        else:
-            flat_dict[full_key] = value
-    return flat_dict
-
 def parse_transaction_file(input_file, output_file):
+    """
+    Parses a text file containing transaction data and saves extracted information to an Excel file.
+    """
     data = []
     transaction_type = None
     create_time = None
-    json_block = []
-    inside_json = False
 
     print(f"🔍 Reading file: {input_file}")
 
@@ -34,9 +19,9 @@ def parse_transaction_file(input_file, output_file):
     for line_num, line in enumerate(lines, start=1):
         line = line.strip()
 
-        # Identify transaction type
+        # Identify Transaction Type
         if re.match(r"^\w+[-_]\w+[-_]\w+[-_]\w+$", line):
-            transaction_type = line  # Store transaction type
+            transaction_type = line
             print(f"\n📌 Line {line_num}: Found transaction type → {transaction_type}")
             continue
 
@@ -46,29 +31,18 @@ def parse_transaction_file(input_file, output_file):
             print(f"⏳ Line {line_num}: Found CreateTime → {create_time}")
             continue
 
-        # Detect start of JSON
-        if line.startswith("{"):
-            inside_json = True
-            json_block = [line]
-            continue
+        # Process Key-Value Pairs (Manual Parsing)
+        if line.startswith("{") and line.endswith("}"):
+            line = line[1:-1].strip()  # Remove { and }
+            key_value_pairs = re.findall(r'"([^"]+)"\s*:\s*"([^"]*)"', line)  # Extract key-value pairs
 
-        # If inside a JSON block, append lines until JSON is complete
-        if inside_json:
-            json_block.append(line)
-            if line.endswith("}"):  # JSON ends
-                inside_json = False
-                json_string = " ".join(json_block)  # Merge lines into a single JSON string
+            if not key_value_pairs:
+                print(f"⚠️ Line {line_num}: No key-value pairs found, check format!")
+                continue
 
-                # Parse JSON
-                try:
-                    json_data = json.loads(json_string)  # Load JSON
-                    flat_data = flatten_json(json_data)  # Flatten nested JSON
-                    for key, value in flat_data.items():
-                        print(f"✅ Parsed: {transaction_type} | {create_time} | {key} | {value}")  # Debug print
-                        data.append([transaction_type, create_time, key, value])
-                except json.JSONDecodeError as e:
-                    print(f"\n⚠️ Line {line_num}: Skipping invalid JSON due to error:\n{json_string[:200]}...")
-                    print(f"Error: {e}")
+            for key, value in key_value_pairs:
+                print(f"✅ Parsed: {transaction_type} | {create_time} | {key} | {value}")  # Debugging
+                data.append([transaction_type, create_time, key, value])
 
     # Check if any data was extracted
     if not data:
