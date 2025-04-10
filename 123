@@ -1,4 +1,5 @@
-=TRIM(MID(S2711, FIND("accountNumber=", S2711, FIND("accountNumber=", S2711) + 1) + 14, LEN(S2711)))
+=IF(ISNUMBER(SEARCH("accountNumber=", S2711)), MID(S2711, FIND("accountNumber=", S2711, FIND("accountNumber=", S2711) + 1) + LEN("accountNumber="), 500), "")
+
 
 
 
