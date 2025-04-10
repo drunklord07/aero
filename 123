@@ -1,3 +1,4 @@
-=TRIM(MID(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+14,FIND(",",S2711&",",FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+14)-FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)-14))
+=TRIM(MID(S2711, FIND("accountNumber=", S2711, FIND("accountNumber=", S2711) + 1) + 14, LEN(S2711)))
+
 
 
