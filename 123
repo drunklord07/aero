@@ -1,4 +1,4 @@
-=IFERROR(TRIM(MID(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+14,LEN(S2711))),"")
+=TRIM(MID(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+14,FIND(",",S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1))-FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)-14))
 
 
 
