@@ -1,1 +1,2 @@
-=IFERROR(TRIM(MID(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+LEN("accountNumber="),FIND(" ",S2711&" ",FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)+LEN("accountNumber="))-FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)-LEN("accountNumber="))),"")
+=IFERROR(TRIM(MID(S2711,LEN(LEFT(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)))+13,FIND(" ",S2711&" ",LEN(LEFT(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)))+13)-LEN(LEFT(S2711,FIND("accountNumber=",S2711,FIND("accountNumber=",S2711)+1)))-13)),"")
+
